@@ -63,7 +63,19 @@ python examples/anthropic-bedrock.py
 
 ## Quick Start
 
-1. **Install the middleware:**
+1. **Create your project:**
+   ```bash
+   mkdir my-anthropic-project
+   cd my-anthropic-project
+
+   # Create virtual environment
+   python -m venv venv
+
+   # Activate virtual environment
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+2. **Install the middleware:**
    ```bash
    # Basic installation
    pip install revenium-middleware-anthropic
@@ -72,7 +84,7 @@ python examples/anthropic-bedrock.py
    pip install revenium-middleware-anthropic[bedrock]
    ```
 
-2. **Set up your environment variables:**
+3. **Set up your environment variables:**
    Create a `.env` file in the project root:
    ```env
    ANTHROPIC_API_KEY=sk-ant-api03-...
@@ -85,7 +97,7 @@ python examples/anthropic-bedrock.py
    AWS_REGION=us-east-1
    ```
 
-3. **Run any example:**
+4. **Run any example:**
    ```bash
    python examples/anthropic-basic.py
    ```
