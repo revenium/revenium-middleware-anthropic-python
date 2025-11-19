@@ -30,16 +30,6 @@ A production-ready middleware library for metering and monitoring Anthropic API 
 
 **Note**: The middleware only wraps `messages.create` and `messages.stream` endpoints. Other Anthropic SDK features work normally but aren't metered.
 
-## Installation
-
-```bash
-# Basic installation
-pip install revenium-middleware-anthropic
-
-# With AWS Bedrock support
-pip install revenium-middleware-anthropic[bedrock]
-```
-
 ## Quick Start
 
 **For complete examples and setup instructions, see [`examples/README.md`](https://github.com/revenium/revenium-middleware-anthropic-python/blob/HEAD/examples/README.md)**
@@ -240,6 +230,7 @@ Control logging with the `REVENIUM_LOG_LEVEL` environment variable. Available le
 - `INFO`: General information (default)
 - `WARNING`: Warning messages only
 - `ERROR`: Error messages only
+- `CRITICAL`: Critical error messages only
 
 ## Documentation
 

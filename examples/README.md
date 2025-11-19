@@ -11,20 +11,12 @@ The minimal getting started example with all metadata fields documented.
 - Perfect for understanding the middleware basics
 - Zero-config setup with auto-initialization
 
-```bash
-python examples/getting_started.py
-```
-
 ### **anthropic-basic.py**
 The simplest way to get started with Revenium middleware.
 - Zero-config setup with auto-initialization
 - Basic Anthropic API usage with automatic metering
 - Demonstrates hybrid initialization approach
 - Perfect for quick testing and simple applications
-
-```bash
-python examples/anthropic-basic.py
-```
 
 ### **anthropic-advanced.py**
 Production-ready example with detailed metadata tracking.
@@ -33,20 +25,12 @@ Production-ready example with detailed metadata tracking.
 - Enables detailed billing and analytics
 - Shows advanced configuration options
 
-```bash
-python examples/anthropic-advanced.py
-```
-
 ### **anthropic-streaming.py**
 Complete streaming API example with real-time response display.
 - Uses Anthropic's streaming API with full token tracking
 - Automatic token counting for streaming responses
 - Context-based metadata setting with `usage_context`
 - Thread-safe streaming support
-
-```bash
-python examples/anthropic-streaming.py
-```
 
 ### **anthropic-bedrock.py** (AWS Bedrock Only)
 Complete AWS Bedrock integration demonstration.
@@ -57,25 +41,24 @@ Complete AWS Bedrock integration demonstration.
 - Advanced streaming with detailed usage tracking via Bedrock
 - Model mapping examples and configuration options
 
-```bash
-python examples/anthropic-bedrock.py
-```
-
 ## Quick Start
 
-1. **Create your project:**
+1. **Clone the repository:**
    ```bash
-   mkdir my-anthropic-project
-   cd my-anthropic-project
-
-   # Create virtual environment
-   python -m venv venv
-
-   # Activate virtual environment
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   git clone https://github.com/revenium/revenium-middleware-anthropic-python.git
+   cd revenium-middleware-anthropic-python
    ```
 
-2. **Install the middleware:**
+2. **Create virtual environment:**
+   ```bash
+   # Create virtual environment
+   python -m venv .venv
+
+   # Activate virtual environment
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   ```
+
+3. **Install the middleware:**
    ```bash
    # Basic installation
    pip install revenium-middleware-anthropic python-dotenv
@@ -84,7 +67,7 @@ python examples/anthropic-bedrock.py
    pip install revenium-middleware-anthropic[bedrock] python-dotenv
    ```
 
-3. **Set up your environment variables:**
+4. **Set up your environment variables:**
    Create a `.env` file in the project root:
    ```env
    # Revenium API keys
@@ -100,9 +83,22 @@ python examples/anthropic-bedrock.py
    AWS_REGION="us-east-1"
    ```
 
-4. **Run any example:**
+5. **Run any example:**
    ```bash
+   # Getting started example
+   python examples/getting_started.py
+
+   # Basic usage
    python examples/anthropic-basic.py
+
+   # Advanced with metadata
+   python examples/anthropic-advanced.py
+
+   # Streaming example
+   python examples/anthropic-streaming.py
+
+   # AWS Bedrock integration
+   python examples/anthropic-bedrock.py
    ```
 
 ## Hybrid Initialization
