@@ -15,6 +15,13 @@ from .bedrock_adapter import (
     BedrockError, BedrockValidationError, BedrockInvokeError, BedrockStreamError
 )
 
+# Import trace visualization functions
+from .trace_fields import (
+    get_environment, get_region, get_credential_alias,
+    get_trace_type, get_trace_name, get_parent_transaction_id,
+    get_transaction_name, get_retry_number, detect_operation_type
+)
+
 logger = logging.getLogger("revenium_middleware.extension")
 
 # Define usage context for thread-safe metadata storage
@@ -149,6 +156,71 @@ def _handle_bedrock_stream_request(args, kwargs, usage_metadata, request_time_dt
     )
 
 
+def _extract_trace_fields(usage_metadata, request_body=None):
+    """
+    Extract trace visualization fields from usage_metadata and environment variables.
+
+    Args:
+        usage_metadata: Dictionary containing usage metadata
+        request_body: Optional request body for operation type detection
+
+    Returns:
+        Dictionary with trace visualization fields
+    """
+    # Get trace fields (usage_metadata takes precedence over environment variables)
+    environment = usage_metadata.get('environment') or get_environment()
+    region = usage_metadata.get('region') or get_region()
+    credential_alias = (
+        usage_metadata.get('credentialAlias') or
+        usage_metadata.get('credential_alias') or
+        get_credential_alias()
+    )
+    trace_type = (
+        usage_metadata.get('traceType') or
+        usage_metadata.get('trace_type') or
+        get_trace_type()
+    )
+    trace_name = (
+        usage_metadata.get('traceName') or
+        usage_metadata.get('trace_name') or
+        get_trace_name()
+    )
+    parent_transaction_id = (
+        usage_metadata.get('parentTransactionId') or
+        usage_metadata.get('parent_transaction_id') or
+        get_parent_transaction_id()
+    )
+    transaction_name = (
+        usage_metadata.get('transactionName') or
+        usage_metadata.get('transaction_name') or
+        get_transaction_name(usage_metadata)
+    )
+    retry_number = usage_metadata.get(
+        'retryNumber',
+        usage_metadata.get('retry_number', get_retry_number())
+    )
+
+    # Detect operation type and subtype
+    operation_info = detect_operation_type(
+        'anthropic', '/messages', request_body or {}
+    )
+    operation_type = operation_info.get('operationType')
+    operation_subtype = operation_info.get('operationSubtype')
+
+    return {
+        'environment': environment,
+        'region': region,
+        'credential_alias': credential_alias,
+        'trace_type': trace_type,
+        'trace_name': trace_name,
+        'parent_transaction_id': parent_transaction_id,
+        'transaction_name': transaction_name,
+        'retry_number': retry_number,
+        'operation_type': operation_type,
+        'operation_subtype': operation_subtype,
+    }
+
+
 def _create_bedrock_metering_call(response, usage_metadata, request_time, response_time, request_duration):
     """Create a metering call for Bedrock usage."""
 
@@ -183,6 +255,9 @@ def _create_bedrock_metering_call(response, usage_metadata, request_time, respon
                     "value": usage_metadata.get("subscriber_credential")
                 }
 
+            # Extract trace visualization fields
+            trace_fields = _extract_trace_fields(usage_metadata)
+
             result = client.ai.create_completion(
                 cache_creation_token_count=0,  # Bedrock doesn't provide cache info yet
                 cache_read_token_count=0,
@@ -213,7 +288,17 @@ def _create_bedrock_metering_call(response, usage_metadata, request_time, respon
                 agent=usage_metadata.get("agent"),
                 response_quality_score=usage_metadata.get("response_quality_score"),
                 is_streamed=False,
-                operation_type="CHAT",
+                operation_type=trace_fields.get('operation_type', 'CHAT'),
+                # Trace visualization fields
+                environment=trace_fields.get('environment'),
+                region=trace_fields.get('region'),
+                credential_alias=trace_fields.get('credential_alias'),
+                trace_type=trace_fields.get('trace_type'),
+                trace_name=trace_fields.get('trace_name'),
+                parent_transaction_id=trace_fields.get('parent_transaction_id'),
+                transaction_name=trace_fields.get('transaction_name'),
+                retry_number=trace_fields.get('retry_number'),
+                operation_subtype=trace_fields.get('operation_subtype'),
             )
             logger.debug("Bedrock metering call result: %s", result)
         except Exception as e:
@@ -428,6 +513,9 @@ def create_wrapper(wrapped, instance, args, kwargs):
                         "value": nested_subscriber["credential"].get("value")
                     }
 
+            # Extract trace visualization fields
+            trace_fields = _extract_trace_fields(usage_metadata)
+
             result = client.ai.create_completion(
                 cache_creation_token_count=cache_creation_input_tokens,
                 cache_read_token_count=cache_read_input_tokens,
@@ -458,8 +546,18 @@ def create_wrapper(wrapped, instance, args, kwargs):
                 agent=usage_metadata.get("agent"),
                 response_quality_score=usage_metadata.get("response_quality_score"),
                 is_streamed=False,
-                operation_type="CHAT",
-                middleware_source="PYTHON"
+                operation_type=trace_fields.get('operation_type', 'CHAT'),
+                middleware_source="PYTHON",
+                # Trace visualization fields
+                environment=trace_fields.get('environment'),
+                region=trace_fields.get('region'),
+                credential_alias=trace_fields.get('credential_alias'),
+                trace_type=trace_fields.get('trace_type'),
+                trace_name=trace_fields.get('trace_name'),
+                parent_transaction_id=trace_fields.get('parent_transaction_id'),
+                transaction_name=trace_fields.get('transaction_name'),
+                retry_number=trace_fields.get('retry_number'),
+                operation_subtype=trace_fields.get('operation_subtype'),
             )
             logger.debug("Metering call result: %s", result)
             # Treat any successful resource response as success; only warn on explicit failure
@@ -619,6 +717,9 @@ def stream_wrapper(wrapped, instance, args, kwargs):
                                     "value": nested_subscriber["credential"].get("value")
                                 }
 
+                        # Extract trace visualization fields
+                        trace_fields = _extract_trace_fields(usage_metadata)
+
                         result = client.ai.create_completion(
                             cache_creation_token_count=cache_creation_input_tokens,
                             cache_read_token_count=cache_read_input_tokens,
@@ -649,9 +750,19 @@ def stream_wrapper(wrapped, instance, args, kwargs):
                             product_id=usage_metadata.get("product_id"),
                             agent=usage_metadata.get("agent"),
                             is_streamed=True,
-                            operation_type="CHAT",
+                            operation_type=trace_fields.get('operation_type', 'CHAT'),
                             response_quality_score=usage_metadata.get("response_quality_score"),
-                            middleware_source="PYTHON"
+                            middleware_source="PYTHON",
+                            # Trace visualization fields
+                            environment=trace_fields.get('environment'),
+                            region=trace_fields.get('region'),
+                            credential_alias=trace_fields.get('credential_alias'),
+                            trace_type=trace_fields.get('trace_type'),
+                            trace_name=trace_fields.get('trace_name'),
+                            parent_transaction_id=trace_fields.get('parent_transaction_id'),
+                            transaction_name=trace_fields.get('transaction_name'),
+                            retry_number=trace_fields.get('retry_number'),
+                            operation_subtype=trace_fields.get('operation_subtype'),
                         )
                         logger.debug("Metering call result for stream: %s", result)
                         # Treat any successful resource response as success; only warn on explicit failure

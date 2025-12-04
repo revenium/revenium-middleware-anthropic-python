@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2025-12-04
+
+### Added
+- **Trace Visualization & Observability** - 8 new optional fields for distributed tracing and observability
+  - `environment` - Deployment environment with fallback detection
+  - `region` - Cloud region with AWS/Azure/GCP auto-detection
+  - `credential_alias` - Human-readable API key names
+  - `trace_type` - Workflow category identifier (validated, max 128 chars)
+  - `trace_name` - Human-readable trace instance label (auto-truncates at 256 chars)
+  - `parent_transaction_id` - Parent transaction reference for distributed tracing
+  - `transaction_name` - Human-friendly operation name
+  - `operation_subtype` - Additional operation context
+- New module `trace_fields.py` for centralized field capture and validation
+- Auto-detection of operation types (CHAT, TOOL_CALL)
+- Environment variable support for all trace fields with cloud provider fallbacks
+- Test coverage for trace visualization
+- Example code demonstrating trace visualization features
+
+### Changed
+- Updated `log_token_usage()` signature with 8 new optional parameters
+- Updated `create_metering_call()` to capture and pass trace fields
+
+### Dependencies
+- Requires `revenium_middleware>=0.3.5` for trace field support in the metering API
+
 ## [0.2.27] - 2025-11-17
 
 ### Changed

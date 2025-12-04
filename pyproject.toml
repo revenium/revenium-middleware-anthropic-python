@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "revenium-middleware-anthropic"
-version = "0.2.27"
+version = "0.3.0"
 description = "A Python library that meters Anthropic usage to Revenium."
 readme = "README.md"
 requires-python = ">=3.8"
@@ -15,7 +15,7 @@ authors = [
 dependencies = [
     "wrapt",
     "anthropic",
-    "revenium_middleware>=0.3.4",
+    "revenium_middleware>=0.3.5",
     "python-dotenv"
 ]
 keywords = ["anthropic", "middleware", "logging", "token-usage", "metering", "revenium", "aws", "bedrock", "claude"]

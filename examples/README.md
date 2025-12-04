@@ -41,6 +41,15 @@ Complete AWS Bedrock integration demonstration.
 - Advanced streaming with detailed usage tracking via Bedrock
 - Model mapping examples and configuration options
 
+### **trace_visualization_example.py**
+Comprehensive trace visualization and distributed tracing demonstration.
+- Basic trace visualization with environment variables
+- Distributed tracing with parent-child transaction relationships
+- Retry tracking for failed operations
+- Custom trace categorization and naming
+- Region and credential tracking
+- Usage metadata override patterns
+
 ## Quick Start
 
 1. **Clone the repository:**
@@ -99,6 +108,9 @@ Complete AWS Bedrock integration demonstration.
 
    # AWS Bedrock integration
    python examples/anthropic-bedrock.py
+
+   # Trace visualization
+   python examples/trace_visualization_example.py
    ```
 
 ## Hybrid Initialization
@@ -179,6 +191,16 @@ All examples automatically load environment variables from a `.env` file.
 
 ### Debug Configuration
 - `REVENIUM_LOG_LEVEL` - Set to `DEBUG` for detailed logging
+
+### Trace Visualization (Optional)
+- `REVENIUM_ENVIRONMENT` - Deployment environment (e.g., 'production', 'staging')
+- `REVENIUM_REGION` - Cloud region (e.g., 'us-east-1', 'eu-west-1')
+- `REVENIUM_CREDENTIAL_ALIAS` - Friendly name for API credentials
+- `REVENIUM_TRACE_TYPE` - Custom trace type for categorization (alphanumeric, hyphens, underscores, max 128 chars)
+- `REVENIUM_TRACE_NAME` - Human-readable trace name (max 256 chars)
+- `REVENIUM_PARENT_TRANSACTION_ID` - Parent transaction ID for distributed tracing
+- `REVENIUM_TRANSACTION_NAME` - Name of the current transaction
+- `REVENIUM_RETRY_NUMBER` - Retry attempt number (default: 0)
 
 ## Tips
 
