@@ -15,6 +15,9 @@ from .bedrock_adapter import (
     BedrockError, BedrockValidationError, BedrockInvokeError, BedrockStreamError
 )
 
+# Import decorator support and metering client from core package
+from revenium_middleware import client, run_async_in_thread, shutdown_event, merge_metadata
+
 # Import trace visualization functions
 from .trace_fields import (
     get_environment, get_region, get_credential_alias,
@@ -324,24 +327,17 @@ def extract_usage_metadata_and_timing(kwargs: dict, operation_name: str = "opera
     Returns:
         tuple: (usage_metadata, request_time, request_time_dt)
     """
-    # Extract usage_metadata from kwargs
-    usage_metadata = kwargs.pop("usage_metadata", {})
+    # Extract API-level metadata from kwargs
+    api_metadata = kwargs.pop("usage_metadata", {})
 
-    # Merge with context data if available
-    try:
-        context_metadata = usage_context.get({})
-        if context_metadata and isinstance(context_metadata, dict):
-            # Context data as base, parameter data overrides
-            usage_metadata = {**context_metadata, **usage_metadata}
-            logger.debug(f"Merged context metadata for {operation_name}")
-    except LookupError:
-        # No context set, continue with parameter data only
-        pass
+    # Validate and sanitize API-level metadata
+    if not isinstance(api_metadata, dict):
+        logger.warning(f"usage_metadata for {operation_name} should be a dict, got {type(api_metadata)}. Using empty dict.")
+        api_metadata = {}
 
-    # Validate and sanitize usage_metadata
-    if not isinstance(usage_metadata, dict):
-        logger.warning(f"usage_metadata for {operation_name} should be a dict, got {type(usage_metadata)}. Using empty dict.")
-        usage_metadata = {}
+    # Merge with decorator metadata (API-level takes precedence)
+    usage_metadata = merge_metadata(api_metadata)
+    logger.debug(f"Merged decorator metadata for {operation_name}: {usage_metadata}")
 
     # Sanitize metadata structure (defensive programming)
     usage_metadata = _sanitize_metadata(usage_metadata, operation_name)

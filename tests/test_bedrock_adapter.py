@@ -336,10 +336,15 @@ class TestBedrockStreamWrapper:
         assert wrapper.request_time == request_time
         assert wrapper.accumulated_text == ""
 
+    @patch('revenium_middleware_anthropic.middleware._get_thread_safe_client')
     @patch('revenium_middleware_anthropic.bedrock_adapter.bedrock_invoke_stream')
-    def test_bedrock_stream_wrapper_context_manager(self, mock_bedrock_invoke_stream):
+    def test_bedrock_stream_wrapper_context_manager(self, mock_bedrock_invoke_stream, mock_get_client):
         """Test BedrockStreamWrapper as context manager."""
         import datetime
+
+        # Mock the metering client to prevent real API calls
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
 
         mock_iterator = MagicMock()
         mock_bedrock_invoke_stream.return_value = mock_iterator
@@ -363,10 +368,15 @@ class TestBedrockStreamWrapper:
             wrapper.model, wrapper.payload, wrapper.region
         )
 
+    @patch('revenium_middleware_anthropic.middleware._get_thread_safe_client')
     @patch('revenium_middleware_anthropic.bedrock_adapter.bedrock_invoke_stream')
-    def test_bedrock_stream_wrapper_text_stream(self, mock_bedrock_invoke_stream):
+    def test_bedrock_stream_wrapper_text_stream(self, mock_bedrock_invoke_stream, mock_get_client):
         """Test BedrockStreamWrapper text_stream property."""
         import datetime
+
+        # Mock the metering client to prevent real API calls
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
 
         # Create a proper mock iterator
         class MockIterator:
@@ -404,10 +414,15 @@ class TestBedrockStreamWrapper:
         assert chunks == ["Hello", " world", "!"]
         assert wrapper.accumulated_text == "Hello world!"
 
+    @patch('revenium_middleware_anthropic.middleware._get_thread_safe_client')
     @patch('revenium_middleware_anthropic.bedrock_adapter.bedrock_invoke_stream')
-    def test_bedrock_stream_wrapper_get_final_message(self, mock_bedrock_invoke_stream):
+    def test_bedrock_stream_wrapper_get_final_message(self, mock_bedrock_invoke_stream, mock_get_client):
         """Test BedrockStreamWrapper get_final_message method."""
         import datetime
+
+        # Mock the metering client to prevent real API calls
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
 
         # Mock iterator with token counts
         mock_iterator = MagicMock()

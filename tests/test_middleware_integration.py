@@ -257,12 +257,16 @@ class TestBedrockStreamingIntegration:
 
     @patch('revenium_middleware_anthropic.middleware.detect_provider')
     @patch('revenium_middleware_anthropic.middleware._handle_bedrock_stream_request')
-    def test_stream_wrapper_routes_to_bedrock_streaming(self, mock_handle_bedrock_stream, mock_detect_provider):
+    @patch('revenium_middleware_anthropic.middleware.merge_metadata')
+    def test_stream_wrapper_routes_to_bedrock_streaming(self, mock_merge_metadata, mock_handle_bedrock_stream, mock_detect_provider):
         """Test that stream_wrapper routes Bedrock requests to streaming handler."""
         # Setup mocks
         mock_detect_provider.return_value = Provider.BEDROCK
         mock_stream_wrapper = MagicMock()
         mock_handle_bedrock_stream.return_value = mock_stream_wrapper
+
+        # Mock merge_metadata to return the expected metadata
+        mock_merge_metadata.return_value = {"trace_id": "test-123", "organization_id": "anthropic-python-streaming"}
 
         mock_wrapped = MagicMock()
 
@@ -273,11 +277,7 @@ class TestBedrockStreamingIntegration:
             "max_tokens": 100
         }
 
-        # Mock usage_context
-        with patch('revenium_middleware_anthropic.middleware.usage_context') as mock_context:
-            mock_context.get.return_value = {"trace_id": "test-123", "organization_id": "anthropic-python-streaming"}
-
-            result = stream_wrapper(mock_wrapped, None, (), kwargs)
+        result = stream_wrapper(mock_wrapped, None, (), kwargs)
 
         # Verify Bedrock streaming handler was called
         mock_handle_bedrock_stream.assert_called_once()

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "revenium-middleware-anthropic"
-version = "0.3.0"
+version = "0.4.0"
 description = "A Python library that meters Anthropic usage to Revenium."
 readme = "README.md"
 requires-python = ">=3.8"
@@ -54,3 +54,6 @@ bedrock = [
 
 [tool.setuptools]
 packages = ["revenium_middleware_anthropic"]
+
+[tool.setuptools.package-data]
+revenium_middleware_anthropic = ["py.typed"]

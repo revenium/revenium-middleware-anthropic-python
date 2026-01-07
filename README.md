@@ -11,6 +11,7 @@ A production-ready middleware library for metering and monitoring Anthropic API 
 
 - **Precise Usage Tracking**: Monitor tokens, costs, and request counts for Anthropic chat completions
 - **Seamless Integration**: Drop-in middleware that works with minimal code changes
+- **Decorator Support**: Automatic metadata injection with `@revenium_metadata` and selective metering with `@revenium_meter`
 - **AWS Bedrock Support**: Full integration with automatic detection and metering for Anthropic models via AWS Bedrock
 - **Complete Streaming Support**: Full streaming functionality for both Anthropic API and AWS Bedrock
 - **Hybrid Initialization**: Auto-initialization on import + explicit control for advanced configuration
@@ -25,6 +26,7 @@ A production-ready middleware library for metering and monitoring Anthropic API 
 | **Streaming** | Full support | Full support |
 | **Token Metering** | Automatic | Automatic |
 | **Metadata Tracking** | Full support | Full support |
+| **Decorator Support** | Full support | Full support |
 | **Thread Safety** | Production-ready | Production-ready |
 | **Auto-initialization** | Zero-config | Zero-config |
 
@@ -113,6 +115,7 @@ print(message.content[0].text)
 - [`examples/anthropic-advanced.py`](https://github.com/revenium/revenium-middleware-anthropic-python/blob/HEAD/examples/anthropic-advanced.py) - Production-ready with detailed metadata tracking
 - [`examples/anthropic-streaming.py`](https://github.com/revenium/revenium-middleware-anthropic-python/blob/HEAD/examples/anthropic-streaming.py) - Streaming support with token tracking
 - [`examples/anthropic-bedrock.py`](https://github.com/revenium/revenium-middleware-anthropic-python/blob/HEAD/examples/anthropic-bedrock.py) - Complete AWS Bedrock integration
+- [`examples/example_decorator.py`](https://github.com/revenium/revenium-middleware-anthropic-python/blob/HEAD/examples/example_decorator.py) - Decorator-based metadata injection (v0.4.0+)
 
 ## AWS Bedrock Integration
 
@@ -181,7 +184,12 @@ The middleware provides complete streaming support for both direct Anthropic API
 
 ## Metadata Fields
 
-Add business context to track usage by organization, user, task type, or custom fields. Pass a `usage_metadata` dictionary with any of these optional fields:
+Add business context to track usage by organization, user, task type, or custom fields. Metadata can be passed in two ways:
+
+1. **Directly via `usage_metadata`** (recommended for dynamic values)
+2. **Via decorators** (recommended for function-level defaults - see [Decorator Support](#decorator-support))
+
+Pass a `usage_metadata` dictionary with any of these optional fields:
 
 | Field | Description | Use Case |
 |-------|-------------|----------|
@@ -203,22 +211,44 @@ Add business context to track usage by organization, user, task type, or custom 
 
 ## Trace Visualization Fields (v0.3.0+)
 
-Enhanced observability fields for distributed tracing and analytics. These can be set via environment variables or passed in `usage_metadata`:
+Enhanced observability fields for distributed tracing and analytics. These fields provide deep insights into your AI operations across environments, regions, and workflows.
 
-| Field | Environment Variable | Description | Use Case |
-|-------|---------------------|-------------|----------|
-| `environment` | `REVENIUM_ENVIRONMENT` | Deployment environment (e.g., "production", "staging") | Track usage across different deployment environments; auto-detects from `ENVIRONMENT`, `DEPLOYMENT_ENV` |
-| `region` | `REVENIUM_REGION` | Cloud region identifier (e.g., "us-east-1", "eastus") | Multi-region deployment tracking; auto-detects from `AWS_REGION`, `AZURE_REGION`, `GCP_REGION` |
-| `credential_alias` | `REVENIUM_CREDENTIAL_ALIAS` | Human-readable API key name (e.g., "prod-anthropic-key") | Track which credential was used for credential rotation and security auditing |
-| `trace_type` | `REVENIUM_TRACE_TYPE` | Workflow category identifier (max 128 chars) | Group similar workflows (e.g., "customer-support", "data-analysis") for analytics |
-| `trace_name` | `REVENIUM_TRACE_NAME` | Human-readable trace label (max 256 chars) | Label trace instances (e.g., "Customer Support Chat", "Document Analysis") |
-| `parent_transaction_id` | `REVENIUM_PARENT_TRANSACTION_ID` | Parent transaction ID for distributed tracing | Link child operations to parent transactions across services |
-| `transaction_name` | `REVENIUM_TRANSACTION_NAME` | Human-friendly operation name | Label individual operations (e.g., "Generate Response", "Analyze Sentiment") |
-| `operation_subtype` | - | Additional operation context | Auto-detected based on API usage (e.g., "tool_use", "streaming") |
+### How to Set Trace Fields
 
-**Note:** `operation_type` is automatically detected by the middleware based on the API endpoint (e.g., "CHAT" for messages.create).
+**Recommended approach:** Pass fields directly in `usage_metadata` for maximum control and dynamic values:
 
-**Example:**
+```python
+message = client.messages.create(
+    model="claude-3-haiku-20240307",
+    max_tokens=100,
+    messages=[{"role": "user", "content": "Hello!"}],
+    usage_metadata={
+        "environment": "production",
+        "region": "us-east-1",
+        "trace_type": "customer-support",
+        "trace_name": "Support Chat Session"
+    }
+)
+```
+
+**Fallback mechanism:** Environment variables can be used as defaults when fields are not provided in `usage_metadata`. This is useful for container/deployment-level configuration, but direct passing is preferred for dynamic, request-specific values.
+
+### Available Fields
+
+| Field | Environment Variable (Fallback) | Description | Use Case |
+|-------|----------------------------------|-------------|----------|
+| `environment` | `REVENIUM_ENVIRONMENT`<br/>Auto-detects: `ENVIRONMENT`, `DEPLOYMENT_ENV` | Deployment environment (e.g., "production", "staging", "dev") | Track usage and costs across different deployment environments; identify staging vs production usage |
+| `region` | `REVENIUM_REGION`<br/>Auto-detects: `AWS_REGION`, `AZURE_REGION`, `GCP_REGION` | Cloud region identifier (e.g., "us-east-1", "eastus", "us-central1") | Multi-region deployment tracking; analyze latency and costs by region |
+| `credential_alias` | `REVENIUM_CREDENTIAL_ALIAS` | Human-readable API key name (e.g., "prod-anthropic-key", "staging-key") | Track which credential was used; useful for credential rotation and security auditing |
+| `trace_type` | `REVENIUM_TRACE_TYPE` | Workflow category identifier (max 128 chars, alphanumeric/hyphens/underscores) | Group similar workflows (e.g., "customer-support", "data-analysis", "code-review") for analytics and cost attribution |
+| `trace_name` | `REVENIUM_TRACE_NAME` | Human-readable trace label (max 256 chars) | Label trace instances (e.g., "Customer Support Chat", "Document Analysis Pipeline") for easy identification |
+| `parent_transaction_id` | `REVENIUM_PARENT_TRANSACTION_ID` | Parent transaction ID for distributed tracing | Link child operations to parent transactions across microservices and workflows |
+| `transaction_name` | `REVENIUM_TRANSACTION_NAME` | Human-friendly operation name | Label individual operations (e.g., "Generate Response", "Analyze Sentiment", "Summarize Document") |
+| `operation_subtype` | - | Additional operation context | Auto-detected based on API usage (e.g., "tool_use", "streaming"); can be overridden |
+
+**Note:** `operation_type` is automatically detected by the middleware based on the API endpoint (e.g., "CHAT" for messages.create) and cannot be overridden.
+
+**Example - Direct passing (recommended):**
 
 ```python
 import anthropic
@@ -226,7 +256,7 @@ import revenium_middleware_anthropic
 
 client = anthropic.Anthropic()
 
-# Set trace fields via usage_metadata
+# Pass trace fields directly in usage_metadata
 message = client.messages.create(
     model="claude-3-haiku-20240307",
     max_tokens=100,
@@ -243,14 +273,185 @@ message = client.messages.create(
 )
 ```
 
-Or set via environment variables:
+**Example - Environment variables (fallback for deployment-level defaults):**
 
 ```bash
+# Set deployment-level defaults
 export REVENIUM_ENVIRONMENT="production"
 export REVENIUM_REGION="us-east-1"
 export REVENIUM_TRACE_TYPE="customer-support"
-export REVENIUM_TRACE_NAME="Support Chat Session"
+export REVENIUM_CREDENTIAL_ALIAS="prod-anthropic-key"
+
+# These will be used when not provided in usage_metadata
+# Direct values in usage_metadata always take precedence
 ```
+
+**Best Practice:** Use environment variables for static deployment configuration (environment, region, credential_alias) and pass dynamic values (trace_name, transaction_name, organization_id) directly in `usage_metadata` or via decorators.
+
+## Decorator Support (v0.4.0+)
+
+The middleware supports powerful decorators for automatic metadata injection and selective metering, eliminating the need to pass `usage_metadata` to every API call.
+
+### `@revenium_metadata` - Automatic Metadata Injection
+
+Automatically inject metadata into all Anthropic API calls within a function's scope. This is the recommended approach for functions that make multiple API calls with shared metadata.
+
+**Benefits:**
+- **DRY Principle**: Define metadata once, apply to all API calls in the function
+- **Cleaner Code**: No need to pass `usage_metadata` to each API call
+- **Composable**: Decorators can be nested and combined
+- **Precedence**: API-level metadata always overrides decorator metadata
+
+**Basic Example:**
+
+```python
+from anthropic import Anthropic
+from revenium_middleware import revenium_metadata
+import revenium_middleware_anthropic
+
+client = Anthropic()
+
+@revenium_metadata(
+    trace_id="session-12345",
+    task_type="customer-support",
+    organization_id="acme-corp",
+    environment="production"
+)
+def handle_customer_query(question: str) -> str:
+    # All API calls automatically include the decorator metadata
+    response = client.messages.create(
+        model="claude-3-haiku-20240307",
+        max_tokens=100,
+        messages=[{"role": "user", "content": question}]
+    )
+    return response.content[0].text
+
+# Usage
+answer = handle_customer_query("How do I reset my password?")
+```
+
+**Multiple API Calls Example:**
+
+```python
+@revenium_metadata(
+    trace_id="batch-process-001",
+    task_type="data-analysis",
+    organization_id="analytics-team"
+)
+def analyze_documents(documents: list) -> list:
+    results = []
+    for doc in documents:
+        # Each call automatically gets the same metadata
+        response = client.messages.create(
+            model="claude-3-haiku-20240307",
+            max_tokens=200,
+            messages=[{"role": "user", "content": f"Analyze: {doc}"}]
+        )
+        results.append(response.content[0].text)
+    return results
+```
+
+**Nested Decorators (Metadata Merging):**
+
+```python
+@revenium_metadata(
+    organization_id="acme-corp",
+    environment="production"
+)
+def outer_function():
+    # This call gets: organization_id, environment
+    response1 = client.messages.create(...)
+
+    @revenium_metadata(
+        trace_id="inner-trace",  # Adds new field
+        task_type="analysis"     # Adds new field
+        # organization_id and environment inherited from outer
+    )
+    def inner_function():
+        # This call gets: organization_id, environment, trace_id, task_type
+        response2 = client.messages.create(...)
+        return response2
+
+    return inner_function()
+```
+
+**API-Level Override:**
+
+```python
+@revenium_metadata(
+    organization_id="acme-corp",
+    task_type="default"
+)
+def mixed_metadata():
+    # Uses decorator metadata
+    response1 = client.messages.create(
+        model="claude-3-haiku-20240307",
+        messages=[{"role": "user", "content": "Hello"}]
+    )
+
+    # API-level metadata overrides decorator
+    response2 = client.messages.create(
+        model="claude-3-haiku-20240307",
+        messages=[{"role": "user", "content": "Hello"}],
+        usage_metadata={
+            "task_type": "special-override",  # Overrides decorator
+            "trace_id": "api-level-trace"     # Adds new field
+            # organization_id still inherited from decorator
+        }
+    )
+```
+
+### `@revenium_meter` - Selective Metering
+
+Control which functions are metered when selective metering is enabled. This is useful for metering only specific high-value operations while ignoring others.
+
+**Note:** This decorator only has an effect when `REVENIUM_SELECTIVE_METERING=true` is set. By default, all API calls are metered automatically.
+
+**Example:**
+
+```python
+from revenium_middleware import revenium_meter, revenium_metadata
+
+# Only metered when REVENIUM_SELECTIVE_METERING=true
+@revenium_meter()
+@revenium_metadata(
+    organization_id="premium-tier",
+    task_type="premium-feature"
+)
+def premium_feature(prompt: str) -> str:
+    response = client.messages.create(
+        model="claude-3-opus-20240229",
+        max_tokens=1000,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response.content[0].text
+
+# Not metered when REVENIUM_SELECTIVE_METERING=true
+def free_feature(prompt: str) -> str:
+    response = client.messages.create(
+        model="claude-3-haiku-20240307",
+        max_tokens=100,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response.content[0].text
+```
+
+**Enable selective metering:**
+
+```bash
+export REVENIUM_SELECTIVE_METERING=true
+```
+
+### Decorator Best Practices
+
+1. **Use `@revenium_metadata` for shared metadata**: When multiple API calls share the same metadata
+2. **Combine decorators**: Use both `@revenium_meter` and `@revenium_metadata` together
+3. **API-level for dynamic values**: Use `usage_metadata` parameter for request-specific values
+4. **Environment variables for deployment config**: Use env vars for static values like environment, region
+5. **Decorator order matters**: Place `@revenium_meter` before `@revenium_metadata` (outer to inner)
+
+**Resources:**
+- [`examples/example_decorator.py`](https://github.com/revenium/revenium-middleware-anthropic-python/blob/HEAD/examples/example_decorator.py) - Complete decorator examples
 
 ## Troubleshooting
 

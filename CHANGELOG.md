@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-01-07
+
+### Added
+- **Decorator Support** - Automatic metadata injection and selective metering
+  - `@revenium_metadata` - Automatically inject metadata into all API calls within a function's scope
+  - `@revenium_meter` - Enable selective metering for specific functions (requires `REVENIUM_SELECTIVE_METERING=true`)
+  - Support for nested decorators with metadata merging
+  - API-level metadata override capability (API-level takes precedence over decorator)
+  - Works with both direct Anthropic API and AWS Bedrock
+- Comprehensive decorator documentation in README
+  - Basic usage examples
+  - Nested decorator examples with metadata inheritance
+  - API-level override examples
+  - Best practices and decorator ordering guidelines
+- New example file `examples/example_decorator.py` demonstrating all decorator features
+
+### Changed
+- Enhanced metadata fields documentation with clearer guidance on direct passing vs environment variables
+- Improved trace visualization fields documentation
+  - Clarified that direct passing via `usage_metadata` is recommended
+  - Documented environment variables as fallback mechanism for deployment-level defaults
+  - Added best practices for when to use each approach
+- Updated middleware to use `merge_metadata()` from core package for decorator support
+- Updated feature list to highlight decorator support
+
+### Dependencies
+- Requires `revenium_middleware>=0.3.5` for decorator support (`merge_metadata`, `revenium_metadata`, `revenium_meter`)
+
 ## [0.3.0] - 2025-12-04
 
 ### Added
@@ -221,7 +249,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Token usage tracking
 - Automatic metering to Revenium
 
-[unreleased]: https://github.com/revenium/revenium-middleware-anthropic-python/compare/v0.2.25...HEAD
+[unreleased]: https://github.com/revenium/revenium-middleware-anthropic-python/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/revenium/revenium-middleware-anthropic-python/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/revenium/revenium-middleware-anthropic-python/compare/v0.2.25...v0.3.0
 [0.2.25]: https://github.com/revenium/revenium-middleware-anthropic-python/compare/v0.2.24...v0.2.25
 [0.2.24]: https://github.com/revenium/revenium-middleware-anthropic-python/compare/v0.2.23...v0.2.24
 [0.2.23]: https://github.com/revenium/revenium-middleware-anthropic-python/releases/tag/v0.2.23
